@@ -16,9 +16,9 @@ const initialMessages: ChatMessage[] = [
   {
     id: 'msg_welcome',
     sender: 'assistant',
-    text: `Namaste! I am **Aarogya AI**, your personal health intelligence companion powered by Google Gemini. 
+    text: `Namaste! I am **SehatSync AI**, your personal health intelligence guide.
 
-I can assist you with understanding your bio-telemetry, analyzing lifestyle habits, evaluating Ayurvedic food synergies, and clarifying general wellness questions. How can I help you feel your best today?`,
+I can assist you with understanding your bio-telemetry, analyzing lifestyle habits, evaluating food synergies, and clarifying general wellness questions. How can I assist you with your health goals today?`,
     timestamp: 'Just now',
     suggestions: [
       'How to lower my evening stress and cortisol?',
@@ -94,7 +94,7 @@ export const Assistant: React.FC = () => {
       <div className="mb-3 p-3 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-900 flex items-start gap-2.5 shadow-xs shrink-0">
         <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
         <p className="text-xs font-medium leading-relaxed">
-          <strong className="font-bold">Medical Disclaimer:</strong> Aarogya is an AI assistant. Always consult a healthcare professional for medical decisions, acute symptom triage, or pharmaceutical adjustments.
+          <strong className="font-bold">Medical Disclaimer:</strong> SehatSync AI is an informational wellness and care coordination guide. Always consult a qualified healthcare professional for medical decisions, diagnosis, acute triage, or pharmaceutical adjustments.
         </p>
       </div>
 
@@ -108,9 +108,9 @@ export const Assistant: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-slate-800">Aarogya Clinical AI</h2>
+                <h2 className="text-sm font-bold text-slate-800">Ask My Health AI</h2>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Gemini 1.5 Pro
+                  Intelligent Guide
                 </span>
               </div>
               <p className="text-[11px] text-teal-600 font-medium">Ready to assist • 24/7 Context Aware</p>

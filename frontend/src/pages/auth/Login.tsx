@@ -28,10 +28,10 @@ export const Login: React.FC = () => {
           <Heart className="w-8 h-8 fill-white/20" />
         </div>
         <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-          Aarogya<span className="text-teal-600">360</span> AI
+          Sehat<span className="text-teal-600">Sync</span> AI
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          Integrated Personal Health & Clinical AI Platform
+          Personalized Preventive Wellness & Connected Healthcare
         </p>
       </div>
 
@@ -40,15 +40,15 @@ export const Login: React.FC = () => {
           <div className="mb-6 flex items-center justify-between pb-4 border-b border-slate-100">
             <div>
               <h3 className="text-lg font-bold text-slate-800">Welcome Back</h3>
-              <p className="text-xs text-slate-500">Sign in to your health cockpit</p>
+              <p className="text-xs text-slate-500">Sign in to your care portal</p>
             </div>
             <button
               type="button"
               onClick={handleFillDemo}
-              className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors flex items-center gap-1 border border-teal-200"
+              className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors flex items-center gap-1 border border-teal-200 cursor-pointer"
             >
               <Sparkles className="w-3 h-3 text-teal-600" />
-              Quick Demo Fill
+              Quick Auto-Fill
             </button>
           </div>
 

@@ -9,42 +9,61 @@ import {
   User,
   Heart,
   Sparkles,
-  ShieldAlert,
+  MapPin,
+  BookOpen,
+  Users2,
+  CalendarCheck2,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
 const navItems = [
   {
-    label: 'Dashboard',
+    label: 'Overview',
     to: '/',
     icon: LayoutDashboard,
   },
   {
-    label: 'RakshakAI',
-    badge: 'Wellness',
+    label: 'My Wellness',
+    badge: 'Vitals',
     to: '/wellness',
     icon: Activity,
   },
   {
-    label: 'Nutrition & Diet',
+    label: 'Nutrition & Lifestyle',
     to: '/nutrition',
     icon: Salad,
   },
   {
-    label: 'CareSync',
+    label: 'Care Coordination',
     badge: 'Meds & Care',
     to: '/caresync',
     icon: Pill,
   },
   {
-    label: 'AI Assistant',
-    badge: 'Gemini',
+    label: 'Nearby Care',
+    to: '/nearby',
+    icon: MapPin,
+  },
+  {
+    label: 'Counsellors',
+    badge: 'Support',
+    to: '/counsellors',
+    icon: Users2,
+  },
+  {
+    label: 'Health Library',
+    to: '/library',
+    icon: BookOpen,
+  },
+  {
+    label: 'Ask My Health',
+    badge: 'AI Guide',
     to: '/assistant',
     icon: Bot,
     highlight: true,
   },
   {
-    label: 'Profile',
+    label: 'Profile & Settings',
     to: '/profile',
     icon: User,
   },
@@ -62,10 +81,10 @@ export const Sidebar: React.FC = () => {
         </div>
         <div>
           <div className="flex items-center gap-1.5">
-            <span className="font-extrabold text-lg text-slate-800 tracking-tight">Aarogya</span>
-            <span className="font-bold text-xs bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded-md">360</span>
+            <span className="font-extrabold text-lg text-slate-800 tracking-tight">Sehat<span className="text-teal-600">Sync</span></span>
+            <span className="font-bold text-[10px] bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded-md">AI</span>
           </div>
-          <p className="text-[10px] uppercase font-semibold tracking-wider text-teal-600">Personal AI Health</p>
+          <p className="text-[10px] uppercase font-semibold tracking-wider text-teal-600">Unified Care Ecosystem</p>
         </div>
       </div>
 

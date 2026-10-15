@@ -50,7 +50,7 @@ export const Wellness: React.FC = () => {
   const checkInMutation = useMutation({
     mutationFn: (data: WellnessCheckIn) => wellnessApi.submitCheckIn(data),
     onSuccess: () => {
-      toast.success('RakshakAI Check-in logged successfully!');
+      toast.success('Daily wellness check-in logged successfully!');
       queryClient.invalidateQueries({ queryKey: ['wellness-latest'] });
       queryClient.invalidateQueries({ queryKey: ['wellness-trends-30d'] });
       queryClient.invalidateQueries({ queryKey: ['wellness-trends-7d'] });
@@ -90,14 +90,14 @@ export const Wellness: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800">
-              RakshakAI <span className="text-teal-600">Bio-Tracker</span>
+              My <span className="text-teal-600">Wellness Vitals</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-200">
               Smart Telemetry
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            Monitor daily nervous system fatigue, mood variance, and sleep architecture powered by Gemini AI.
+            Monitor daily nervous system fatigue, mood variance, and sleep architecture powered by explainable AI insights.
           </p>
         </div>
 

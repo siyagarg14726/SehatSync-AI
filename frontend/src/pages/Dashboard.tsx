@@ -31,6 +31,7 @@ import { wellnessApi } from '../api/wellness';
 import { nutritionApi } from '../api/nutrition';
 import { careSyncApi } from '../api/caresync';
 import { useAuthStore } from '../store/authStore';
+import { calculateWellnessStreak } from '../utils/streakEngine';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -40,6 +41,11 @@ export const Dashboard: React.FC = () => {
   const { data: latestCheckIn, isLoading: checkInLoading } = useQuery({
     queryKey: ['wellness-latest'],
     queryFn: () => wellnessApi.getLatestCheckIn(),
+  });
+
+  const { data: checkInHistory } = useQuery({
+    queryKey: ['wellness-history'],
+    queryFn: () => wellnessApi.getCheckIns(1, 30),
   });
 
   const { data: trends, isLoading: trendsLoading } = useQuery({
@@ -82,30 +88,30 @@ export const Dashboard: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold mb-3 border border-white/20">
             <Sparkles className="w-3.5 h-3.5 text-teal-200" />
-            <span>AI Care Intelligence Engine Active</span>
+            <span>SehatSync Care Intelligence Active</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Namaste, {user?.name || 'Aarogya Member'}
+            Namaste, {user?.name || 'Member'}
           </h1>
           <p className="mt-2 text-sm text-teal-100 font-normal leading-relaxed">
-            Your physiological indicators are stable today. You have completed {medsTaken}/{medsTotal} scheduled medications and 
+            Your physiological indicators are synchronized. You have completed {medsTaken}/{medsTotal} scheduled medications and 
             logged {hydration?.glasses || 5}/8 glasses of water.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
             <button
               onClick={() => navigate('/wellness')}
-              className="px-4 py-2 rounded-xl bg-white text-teal-800 text-xs font-bold shadow-md hover:bg-teal-50 transition-all flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-white text-teal-800 text-xs font-bold shadow-md hover:bg-teal-50 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Activity className="w-3.5 h-3.5 text-teal-600" />
-              Daily Check-in
+              Daily Vitals Check-in
             </button>
             <button
               onClick={() => navigate('/assistant')}
-              className="px-4 py-2 rounded-xl bg-teal-800/40 hover:bg-teal-800/60 backdrop-blur-md text-white text-xs font-semibold border border-white/20 transition-all flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-teal-800/40 hover:bg-teal-800/60 backdrop-blur-md text-white text-xs font-semibold border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-              Ask AI Doctor
+              Ask My Health AI
             </button>
           </div>
         </div>
@@ -169,8 +175,8 @@ export const Dashboard: React.FC = () => {
                   <Smile className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Today's Wellness</h3>
-                  <p className="text-xs text-slate-400">RakshakAI Bio-Telemetry</p>
+                  <h3 className="text-base font-bold text-slate-800">Today's Vitals</h3>
+                  <p className="text-xs text-slate-400">Bio-telemetry Tracking</p>
                 </div>
               </div>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -458,7 +464,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/40 border border-emerald-100/60">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span className="text-xs font-semibold text-slate-700">RakshakAI Bio Check-in</span>
+                <span className="text-xs font-semibold text-slate-700">Daily Vitals Check-in</span>
               </div>
               <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
                 Recorded

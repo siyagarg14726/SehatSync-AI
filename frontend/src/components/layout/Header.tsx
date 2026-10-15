@@ -38,17 +38,17 @@ export const Header: React.FC = () => {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white shadow-sm">
             <Heart className="w-4 h-4 fill-white/20" />
           </div>
-          <span className="font-bold text-slate-800 text-base">Aarogya360</span>
+          <span className="font-bold text-slate-800 text-base">SehatSync <span className="text-teal-600">AI</span></span>
         </div>
 
         {/* Desktop Greeting */}
         <div className="hidden lg:block">
           <h2 className="text-sm font-semibold text-slate-800">
-            {getGreeting()}, <span className="text-teal-700">{user?.name?.split(' ')[0] || 'Friend'}</span>
+            {getGreeting()}, <span className="text-teal-700">{user?.name?.split(' ')[0] || 'Member'}</span>
           </h2>
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>RakshakAI Bio-Monitoring Active</span>
+            <span>Continuous Vitals Telemetry Active</span>
           </div>
         </div>
       </div>
@@ -61,7 +61,7 @@ export const Header: React.FC = () => {
           className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 text-xs font-semibold border border-teal-200 transition-colors"
         >
           <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-          <span>Ask Aarogya AI</span>
+          <span>Ask My Health AI</span>
         </button>
 
         {/* Notification Bell */}

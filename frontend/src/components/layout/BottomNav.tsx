@@ -10,12 +10,12 @@ import {
 } from 'lucide-react';
 
 const mobileNavItems = [
-  { label: 'Home', to: '/', icon: LayoutDashboard },
+  { label: 'Overview', to: '/', icon: LayoutDashboard },
   { label: 'Wellness', to: '/wellness', icon: Activity },
   { label: 'Nutrition', to: '/nutrition', icon: Salad },
-  { label: 'CareSync', to: '/caresync', icon: Pill },
+  { label: 'Care', to: '/caresync', icon: Pill },
+  { label: 'Nearby', to: '/nearby', icon: MapPin },
   { label: 'Assistant', to: '/assistant', icon: Bot },
-  { label: 'Profile', to: '/profile', icon: User },
 ];
 
 export const BottomNav: React.FC = () => {

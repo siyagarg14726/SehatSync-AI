@@ -152,14 +152,14 @@ export const CareSync: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800">
-              Care<span className="text-teal-600">Sync</span>
+              Care <span className="text-teal-600">Coordination</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-200">
               Unified Care Ecosystem
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            Orchestrate medications, digital prescriptions, specialist consultations, and caregiver circles.
+            Orchestrate medications, digital prescriptions, specialist consultations, and your trusted care circle.
           </p>
         </div>
       </div>
