@@ -1,6 +1,6 @@
-# Aarogya360-AI: Integrated Predictive Wellness & Connected Care Ecosystem
+# SehatSync-AI: Integrated Predictive Wellness & Connected Care Ecosystem
 
-Aarogya360 AI is an integrated, AI-powered personal health platform bridging the gap between predictive wellness intelligence, personalized nutrition and lifestyle planning, and connected healthcare coordination.
+SehatSync AI is an integrated, AI-powered personal health platform bridging the gap between predictive wellness intelligence, personalized nutrition and lifestyle planning, and connected healthcare coordination.
 
 ## Architectural Layers
 - **Backend**: FastAPI (Python 3.13) + Async SQLAlchemy + SQLite/PostgreSQL
