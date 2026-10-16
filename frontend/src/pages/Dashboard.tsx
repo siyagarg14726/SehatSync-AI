@@ -43,43 +43,55 @@ export const Dashboard: React.FC = () => {
     queryFn: () => wellnessApi.getLatestCheckIn(),
   });
 
-  const { data: checkInHistory } = useQuery({
+  const { data: checkInHistory, isLoading: historyLoading, isError: historyError } = useQuery({
     queryKey: ['wellness-history'],
-    queryFn: () => wellnessApi.getCheckIns(1, 30),
+    queryFn: () => wellnessApi.getAllCheckIns(),
   });
+  const streak = calculateWellnessStreak(
+    (checkInHistory ?? [])
+      .map((checkIn) => checkIn.recorded_at ?? checkIn.created_at ?? '')
+      .filter(Boolean),
+  );
+  const todayCheckIn = streak.isActiveToday ? latestCheckIn : null;
+  const hasCheckInToday = !historyLoading && !historyError && streak.isActiveToday;
 
-  const { data: trends, isLoading: trendsLoading } = useQuery({
+  const { data: trends, isLoading: trendsLoading, isError: trendsError } = useQuery({
     queryKey: ['wellness-trends-7d'],
     queryFn: () => wellnessApi.getWellnessTrends(7),
   });
 
-  const { data: hydration } = useQuery({
+  const { data: hydration, isLoading: hydrationLoading, isError: hydrationError } = useQuery({
     queryKey: ['hydration-today'],
     queryFn: () => nutritionApi.getHydration(),
   });
 
-  const { data: medications } = useQuery({
+  const { data: medications, isError: medicationsError } = useQuery({
     queryKey: ['medications'],
     queryFn: () => careSyncApi.getMedications(),
   });
 
-  const { data: appointments } = useQuery({
+  const { data: appointments, isLoading: appointmentsLoading, isError: appointmentsError } = useQuery({
     queryKey: ['appointments'],
     queryFn: () => careSyncApi.getAppointments(),
   });
 
-  const { data: habits } = useQuery({
+  const { data: habits, isError: habitsError } = useQuery({
     queryKey: ['habits'],
     queryFn: () => nutritionApi.getHabits(),
   });
 
   // Derived metrics
-  const medsDue = medications?.filter((m) => m.is_active && !m.taken_today) || [];
-  const medsTaken = medications?.filter((m) => m.taken_today).length || 0;
-  const medsTotal = medications?.length || 0;
+  const activeMedications = medications?.filter((m) => m.is_active) || [];
   const upcomingAppointments = appointments?.filter((a) => a.status === 'upcoming') || [];
   const habitsDone = habits?.filter((h) => h.completed).length || 0;
-  const habitsTotal = habits?.length || 5;
+  const habitsTotal = habits?.length || 0;
+  const planTotal = 2 + habitsTotal;
+  const planComplete = (hasCheckInToday ? 1 : 0) +
+    (hydration && hydration.glasses >= hydration.goal ? 1 : 0) +
+    habitsDone;
+  const carePlanAvailable = !historyLoading && !historyError && Boolean(hydration) && Boolean(habits) &&
+    !hydrationError && !habitsError;
+  const planProgress = carePlanAvailable ? Math.round((planComplete / planTotal) * 100) : null;
 
   return (
     <div className="space-y-6">
@@ -88,14 +100,13 @@ export const Dashboard: React.FC = () => {
         <div className="relative z-10 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold mb-3 border border-white/20">
             <Sparkles className="w-3.5 h-3.5 text-teal-200" />
-            <span>SehatSync Care Intelligence Active</span>
+            <span>Your connected care overview</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             Namaste, {user?.name || 'Member'}
           </h1>
           <p className="mt-2 text-sm text-teal-100 font-normal leading-relaxed">
-            Your physiological indicators are synchronized. You have completed {medsTaken}/{medsTotal} scheduled medications and 
-            logged {hydration?.glasses || 5}/8 glasses of water.
+            Your wellness check-ins and connected care information are brought together here. Data appears when available from your account.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -104,7 +115,7 @@ export const Dashboard: React.FC = () => {
               className="px-4 py-2 rounded-xl bg-white text-teal-800 text-xs font-bold shadow-md hover:bg-teal-50 transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <Activity className="w-3.5 h-3.5 text-teal-600" />
-              Daily Vitals Check-in
+              Daily wellness check-in
             </button>
             <button
               onClick={() => navigate('/assistant')}
@@ -122,44 +133,128 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      <section aria-labelledby="wellness-progress-title" className="rounded-3xl border border-teal-100 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-teal-700">Your wellness rhythm</p>
+            <h2 id="wellness-progress-title" className="mt-1 text-xl font-bold text-slate-900">Small check-ins, steady progress</h2>
+            <p className="mt-1 text-sm text-slate-600">Progress is calculated from saved check-in dates, not sign-ins.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/wellness')}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+          >
+            {historyLoading || historyError ? 'Open Wellness' : streak.isActiveToday ? 'View today’s check-in' : 'Log today’s check-in'}
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
+        {historyLoading ? (
+          <p role="status" className="mt-5 text-sm text-slate-600">Loading your check-in history…</p>
+        ) : historyError ? (
+          <p role="alert" className="mt-5 rounded-xl bg-rose-50 p-4 text-sm text-rose-800">
+            Your check-in history could not be loaded. Streaks and weekly progress are hidden until it is available.
+          </p>
+        ) : (
+        <div className="mt-5 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-teal-50 p-4">
+              <p className="text-xs font-medium text-teal-800">Current streak</p>
+              <p className="mt-1 text-2xl font-bold text-teal-950">{streak.currentStreak} <span className="text-sm font-semibold">days</span></p>
+            </div>
+            <div className="rounded-2xl bg-emerald-50 p-4">
+              <p className="text-xs font-medium text-emerald-800">Longest streak</p>
+              <p className="mt-1 text-2xl font-bold text-emerald-950">{streak.longestStreak} <span className="text-sm font-semibold">days</span></p>
+            </div>
+            <div className="col-span-2 rounded-2xl border border-slate-200 p-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-semibold text-slate-800">Weekly check-in goal</span>
+                <span className="font-semibold text-teal-800">{streak.checkInsThisWeek}/{streak.weeklyGoal}</span>
+              </div>
+              <div
+                role="progressbar"
+                aria-label="Weekly wellness check-in goal"
+                aria-valuemin={0}
+                aria-valuemax={streak.weeklyGoal}
+                aria-valuenow={Math.min(streak.checkInsThisWeek, streak.weeklyGoal)}
+                className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"
+              >
+                <div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${streak.weeklyGoalProgress}%` }} />
+              </div>
+              <p className="mt-2 text-xs text-slate-500">{streak.weeklyGoalProgress}% of your weekly goal</p>
+            </div>
+          </div>
+          <div>
+            <div className="grid grid-cols-7 gap-1.5 sm:gap-2" aria-label="Check-in activity in the last seven days">
+              {streak.weeklyCalendar.map((day) => (
+                <div key={day.dateStr} className="text-center">
+                  <span className="block text-[10px] font-medium text-slate-500">{day.dayLabel}</span>
+                  <span
+                    title={`${day.dateStr}${day.isCheckedIn ? ': check-in logged' : ': no check-in'}`}
+                    aria-label={`${day.dateStr}${day.isCheckedIn ? ', check-in logged' : ', no check-in'}${day.isToday ? ', today' : ''}`}
+                    className={`mx-auto mt-1 flex h-9 w-9 items-center justify-center rounded-xl text-xs font-semibold ${
+                      day.isCheckedIn
+                        ? 'bg-teal-700 text-white'
+                        : day.isToday
+                          ? 'border border-teal-300 bg-teal-50 text-teal-800'
+                          : 'bg-slate-100 text-slate-500'
+                    }`}
+                  >
+                    {day.dayNumber}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {streak.earnedBadges.map((badge) => (
+                <div key={badge.id} title={badge.description} className={`rounded-xl border p-2.5 ${badge.unlocked ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50'}`}>
+                  <span aria-hidden="true" className="text-lg">{badge.icon}</span>
+                  <p className="mt-1 text-[10px] font-semibold leading-tight text-slate-700">{badge.title}</p>
+                  <p className="mt-1 text-[10px] text-slate-500">{badge.unlocked ? 'Earned' : `${badge.progress}%`}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-slate-500">A check-in streak reflects activity, not a clinical health measure.</p>
+          </div>
+        </div>
+        )}
+      </section>
+
       {/* Primary Stat Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <StatCard
-          title="Daily Wellness Score"
-          value={latestCheckIn ? `${latestCheckIn.mood * 10}/100` : '85/100'}
-          subtitle={latestCheckIn ? `Mood: ${latestCheckIn.mood}/10 • Stress: ${latestCheckIn.stress}/10` : 'Tap to log today\'s vitals'}
+          title="Today's check-in"
+          value={historyLoading || historyError ? '—' : hasCheckInToday ? 'Logged' : 'Not logged'}
+          subtitle={todayCheckIn ? 'Your entry is saved' : 'Add a wellness check-in'}
           icon={Activity}
           colorScheme="teal"
-          trend={{ value: '+4 pts', isPositive: true }}
           onClick={() => navigate('/wellness')}
         />
 
         <StatCard
-          title="Sleep Restored"
-          value={latestCheckIn ? `${latestCheckIn.sleep_hours} hrs` : '7.5 hrs'}
-          subtitle="Optimal restorative circadian phase"
+          title="Last sleep entry"
+          value={todayCheckIn ? `${todayCheckIn.sleep_hours} hrs` : '—'}
+          subtitle={todayCheckIn ? 'From today’s check-in' : 'Log a check-in to view'}
           icon={Moon}
           colorScheme="indigo"
-          trend={{ value: 'Target: 8.0h', neutral: true }}
           onClick={() => navigate('/wellness')}
         />
 
         <StatCard
           title="Hydration Intake"
-          value={`${hydration?.glasses || 5} / ${hydration?.goal || 8}`}
-          subtitle={`${Math.round(((hydration?.glasses || 5) / (hydration?.goal || 8)) * 100)}% of daily 2L goal`}
+          value={hydration ? `${hydration.glasses} / ${hydration.goal}` : '—'}
+          subtitle={hydrationLoading ? 'Loading hydration data' : hydrationError ? 'Hydration data could not be loaded' : hydration ? 'Glasses logged / saved goal' : 'No hydration record available'}
           icon={Droplets}
           colorScheme="cyan"
-          trend={{ value: '+2 glasses', isPositive: true }}
           onClick={() => navigate('/nutrition')}
         />
 
         <StatCard
-          title="Meds Due Today"
-          value={medsDue.length}
-          subtitle={medsDue.length === 0 ? 'All scheduled doses taken' : `${medsDue.length} doses pending`}
+          title="Medication schedules"
+          value={medications ? activeMedications.length : '—'}
+          subtitle={medications ? 'Active schedules' : 'Medication data unavailable'}
           icon={Pill}
-          colorScheme={medsDue.length === 0 ? 'emerald' : 'amber'}
+          colorScheme="emerald"
           onClick={() => navigate('/caresync')}
         />
       </div>
@@ -175,12 +270,12 @@ export const Dashboard: React.FC = () => {
                   <Smile className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-800">Today's Vitals</h3>
-                  <p className="text-xs text-slate-400">Bio-telemetry Tracking</p>
+                  <h3 className="text-base font-bold text-slate-800">Today's Wellness Check-in</h3>
+                  <p className="text-xs text-slate-400">Your self-reported entry</p>
                 </div>
               </div>
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                Synchronized
+                {historyLoading || checkInLoading ? 'Loading' : historyError ? 'History unavailable' : hasCheckInToday ? 'Saved' : 'No entry today'}
               </span>
             </div>
 
@@ -188,12 +283,12 @@ export const Dashboard: React.FC = () => {
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
                   <span>Stress Level</span>
-                  <span className="font-bold text-slate-800">{latestCheckIn?.stress || 4}/10</span>
+                  <span className="font-bold text-slate-800">{todayCheckIn ? `${todayCheckIn.stress}/10` : '—'}</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                   <div
                     className="bg-teal-500 h-2 rounded-full transition-all"
-                    style={{ width: `${(latestCheckIn?.stress || 4) * 10}%` }}
+                    style={{ width: `${(todayCheckIn?.stress ?? 0) * 10}%` }}
                   />
                 </div>
               </div>
@@ -201,12 +296,12 @@ export const Dashboard: React.FC = () => {
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
                   <span>Fatigue Index</span>
-                  <span className="font-bold text-slate-800">{latestCheckIn?.fatigue || 3}/10</span>
+                  <span className="font-bold text-slate-800">{todayCheckIn ? `${todayCheckIn.fatigue}/10` : '—'}</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                   <div
                     className="bg-emerald-500 h-2 rounded-full transition-all"
-                    style={{ width: `${(latestCheckIn?.fatigue || 3) * 10}%` }}
+                    style={{ width: `${(todayCheckIn?.fatigue ?? 0) * 10}%` }}
                   />
                 </div>
               </div>
@@ -214,19 +309,19 @@ export const Dashboard: React.FC = () => {
               <div>
                 <div className="flex justify-between text-xs font-medium text-slate-600 mb-1">
                   <span>Mood State</span>
-                  <span className="font-bold text-slate-800">{latestCheckIn?.mood || 8}/10</span>
+                  <span className="font-bold text-slate-800">{todayCheckIn ? `${todayCheckIn.mood}/10` : '—'}</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                   <div
                     className="bg-teal-600 h-2 rounded-full transition-all"
-                    style={{ width: `${(latestCheckIn?.mood || 8) * 10}%` }}
+                    style={{ width: `${(todayCheckIn?.mood ?? 0) * 10}%` }}
                   />
                 </div>
               </div>
 
-              {latestCheckIn?.notes && (
+              {todayCheckIn?.notes && (
                 <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-xs text-slate-600 italic">
-                  "{latestCheckIn.notes}"
+                  "{todayCheckIn.notes}"
                 </div>
               )}
             </div>
@@ -237,7 +332,7 @@ export const Dashboard: React.FC = () => {
               onClick={() => navigate('/wellness')}
               className="w-full py-2.5 px-4 rounded-xl text-xs font-bold text-teal-700 bg-teal-50 hover:bg-teal-100 transition-colors flex items-center justify-center gap-1.5"
             >
-              Update Today's Metrics
+              Review today's check-in
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -253,7 +348,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-800">Wellness Trend (Last 7 Days)</h3>
-                  <p className="text-xs text-slate-400">Mood vs. Stress correlation</p>
+                  <p className="text-xs text-slate-400">Mood and stress scores from your entries</p>
                 </div>
               </div>
               <div className="flex items-center gap-4 text-xs font-semibold">
@@ -271,7 +366,11 @@ export const Dashboard: React.FC = () => {
             <div className="h-64 mt-4">
               {trendsLoading ? (
                 <LoadingSpinner />
-              ) : (
+              ) : trendsError ? (
+                <div role="alert" className="flex h-full items-center justify-center rounded-2xl bg-rose-50 px-6 text-center text-sm text-rose-800">
+                  Your wellness trends could not be loaded.
+                </div>
+              ) : trends?.length ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                     <defs>
@@ -286,42 +385,21 @@ export const Dashboard: React.FC = () => {
                     </defs>
                     <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
                     <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#ffffff',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0',
-                        fontSize: '12px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="mood"
-                      name="Mood"
-                      stroke="#0d9488"
-                      strokeWidth={2.5}
-                      fillOpacity={1}
-                      fill="url(#moodGradient)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="stress"
-                      name="Stress"
-                      stroke="#94a3b8"
-                      strokeWidth={2}
-                      strokeDasharray="4 4"
-                      fillOpacity={1}
-                      fill="url(#stressGradient)"
-                    />
+                    <Tooltip contentStyle={{ backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '12px' }} />
+                    <Area type="monotone" dataKey="mood" name="Mood" stroke="#0d9488" strokeWidth={2.5} fillOpacity={1} fill="url(#moodGradient)" />
+                    <Area type="monotone" dataKey="stress" name="Stress" stroke="#94a3b8" strokeWidth={2} strokeDasharray="4 4" fillOpacity={1} fill="url(#stressGradient)" />
                   </AreaChart>
                 </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center rounded-2xl bg-slate-50 px-6 text-center text-sm text-slate-500">
+                  Your wellness trend will appear after check-ins have been recorded.
+                </div>
               )}
             </div>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-            <span>✨ Gemini Insight: Inverse correlation confirmed—higher sleep correlates with +2.2 mood increase.</span>
+            <span>Trend lines reflect your saved check-ins; they are not a diagnosis.</span>
             <button
               onClick={() => navigate('/wellness')}
               className="text-teal-700 font-bold hover:underline shrink-0 ml-2"
@@ -348,7 +426,7 @@ export const Dashboard: React.FC = () => {
                 Log Today's Wellness
               </h4>
               <p className="text-xs text-slate-500 mt-1">
-                Record stress, fatigue, mood, and sleep duration for RakshakAI analysis.
+                Record your mood, stress, fatigue, and sleep for your personal wellness history.
               </p>
             </div>
           </div>
@@ -365,7 +443,7 @@ export const Dashboard: React.FC = () => {
                 View Weekly Meal Plan
               </h4>
               <p className="text-xs text-slate-500 mt-1">
-                Ayurvedic and macro-balanced dietary recommendations within INR budget.
+                Review your saved nutrition preferences and meal plans.
               </p>
             </div>
           </div>
@@ -379,10 +457,10 @@ export const Dashboard: React.FC = () => {
             </div>
             <div className="flex-1">
               <h4 className="font-bold text-slate-800 group-hover:text-cyan-700 transition-colors">
-                Medications Due Today
+                Review Medication Schedules
               </h4>
               <p className="text-xs text-slate-500 mt-1">
-                {medsDue.length} doses remaining. Review dosages and mark completed.
+                View medication details saved in Care Coordination.
               </p>
             </div>
           </div>
@@ -412,8 +490,12 @@ export const Dashboard: React.FC = () => {
           </div>
 
           <div className="mt-4 space-y-3">
-            {upcomingAppointments.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">No upcoming appointments scheduled.</p>
+            {appointmentsLoading ? (
+              <p role="status" className="py-4 text-center text-xs text-slate-500">Loading appointment details…</p>
+            ) : appointmentsError ? (
+              <p role="alert" className="py-4 text-center text-xs text-rose-700">Appointment details could not be loaded.</p>
+            ) : upcomingAppointments.length === 0 ? (
+            <p className="text-xs text-slate-400 py-4 text-center">No upcoming appointments are available in your connected care data.</p>
             ) : (
               upcomingAppointments.slice(0, 2).map((apt) => (
                 <div
@@ -456,18 +538,18 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
             <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-              {Math.round(((medsTaken + habitsDone + 1) / (medsTotal + habitsTotal + 1)) * 100)}% Complete
+              {planProgress == null ? 'Progress unavailable' : `${planProgress}% Complete`}
             </span>
           </div>
 
           <div className="mt-4 space-y-3">
             <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/40 border border-emerald-100/60">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                <span className="text-xs font-semibold text-slate-700">Daily Vitals Check-in</span>
+                <CheckCircle2 className={`w-5 h-5 ${hasCheckInToday ? 'text-emerald-600' : 'text-slate-400'}`} />
+                <span className="text-xs font-semibold text-slate-700">Daily wellness check-in</span>
               </div>
               <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-                Recorded
+                {historyLoading ? 'Loading' : historyError ? 'Unavailable' : hasCheckInToday ? 'Recorded' : 'Not logged'}
               </span>
             </div>
 
@@ -477,17 +559,17 @@ export const Dashboard: React.FC = () => {
                 <span className="text-xs font-semibold text-slate-700">Hydration Goal</span>
               </div>
               <span className="text-[11px] font-bold text-slate-600">
-                {hydration?.glasses || 5} of {hydration?.goal || 8} glasses
+                {hydrationLoading ? 'Loading' : hydrationError ? 'Unavailable' : hydration ? `${hydration.glasses} of ${hydration.goal} glasses` : 'Unavailable'}
               </span>
             </div>
 
             <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
               <div className="flex items-center gap-3">
                 <Pill className="w-5 h-5 text-teal-600" />
-                <span className="text-xs font-semibold text-slate-700">Medication Adherence</span>
+                <span className="text-xs font-semibold text-slate-700">Medication schedules</span>
               </div>
               <span className="text-[11px] font-bold text-slate-600">
-                {medsTaken} of {medsTotal} doses taken
+                {medicationsError ? 'Unavailable' : medications ? `${activeMedications.length} active schedules` : 'Loading'}
               </span>
             </div>
 
@@ -497,7 +579,7 @@ export const Dashboard: React.FC = () => {
                 <span className="text-xs font-semibold text-slate-700">Daily Health Habits</span>
               </div>
               <span className="text-[11px] font-bold text-slate-600">
-                {habitsDone} of {habitsTotal} accomplished
+                {habitsError ? 'Unavailable' : habits ? `${habitsDone} of ${habitsTotal} completed` : 'Loading'}
               </span>
             </div>
           </div>

@@ -1,85 +1,133 @@
 import apiClient from './axios';
 import { AuthResponse, LoginCredentials, RegisterData, User, ProfileUpdatePayload } from '../types';
+import { useAuthStore } from '../store/authStore';
+
+interface BackendUser {
+  id: number;
+  email: string;
+  created_at: string;
+  profile?: {
+    user_id: number;
+    full_name: string;
+    age?: number | null;
+    gender?: string | null;
+    phone?: string | null;
+    language_preference?: string;
+  } | null;
+}
+
+interface BackendAuthResponse {
+  access_token: string;
+  user: BackendUser;
+}
+
+interface BackendProfile {
+  user_id: number;
+  full_name: string;
+  age?: number | null;
+  gender?: string | null;
+  phone?: string | null;
+  language_preference?: string;
+}
+
+const mapGender = (value?: string | null): User['gender'] => {
+  const normalized = value?.trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return normalized === 'male' || normalized === 'female' || normalized === 'other' ||
+    normalized === 'prefer_not_to_say'
+    ? normalized
+    : undefined;
+};
+
+const mapLanguage = (value?: string): string | undefined => {
+  const languages: Record<string, string> = {
+    en: 'English',
+    hi: 'Hindi',
+    mr: 'Marathi',
+    gu: 'Gujarati',
+    ta: 'Tamil',
+    te: 'Telugu',
+    bn: 'Bengali',
+  };
+  return value ? languages[value.toLowerCase()] ?? value : undefined;
+};
+
+const toBackendLanguage = (value?: string): string | undefined => {
+  const languageCodes: Record<string, string> = {
+    english: 'en',
+    hindi: 'hi',
+    marathi: 'mr',
+    gujarati: 'gu',
+    tamil: 'ta',
+    telugu: 'te',
+    bengali: 'bn',
+  };
+  return value ? languageCodes[value.toLowerCase()] ?? value : undefined;
+};
+
+const mapUser = (user: BackendUser): User => ({
+  id: String(user.id),
+  name: user.profile?.full_name ?? '',
+  email: user.email,
+  age: user.profile?.age ?? undefined,
+  gender: mapGender(user.profile?.gender),
+  phone: user.profile?.phone ?? undefined,
+  language: mapLanguage(user.profile?.language_preference),
+  created_at: user.created_at,
+});
+
+const mapAuthResponse = (response: BackendAuthResponse): AuthResponse => ({
+  user: mapUser(response.user),
+  token: response.access_token,
+});
+
+const mapUpdatedProfile = (profile: BackendProfile): User => {
+  const currentUser = useAuthStore.getState().user;
+  return {
+    id: currentUser?.id ?? String(profile.user_id),
+    name: profile.full_name,
+    email: currentUser?.email ?? '',
+    age: profile.age ?? undefined,
+    gender: mapGender(profile.gender),
+    phone: profile.phone ?? undefined,
+    language: mapLanguage(profile.language_preference),
+    created_at: currentUser?.created_at,
+  };
+};
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/login', credentials);
-      return response.data;
-    } catch (error) {
-      // Fallback for standalone demo mode if backend is not yet started
-      if ((error as any)?.code === 'ERR_NETWORK' || (error as any)?.message?.includes('Network Error')) {
-        console.warn('Backend unavailable, providing demo session for preview');
-        return {
-          user: {
-            id: 'usr_demo_101',
-            name: credentials.email.split('@')[0] || 'Demo User',
-            email: credentials.email,
-            age: 28,
-            gender: 'other',
-            phone: '+91 98765 43210',
-            language: 'English',
-            created_at: new Date().toISOString(),
-          },
-          token: 'demo-jwt-token-aarogya-360-xyz',
-          message: 'Logged in (demo mode)',
-        };
-      }
-      throw error;
-    }
+    const response = await apiClient.post<BackendAuthResponse>('/api/v1/auth/login', {
+      email: credentials.email,
+      password: credentials.password ?? '',
+    });
+    return mapAuthResponse(response.data);
   },
 
   register: async (data: RegisterData): Promise<AuthResponse> => {
-    try {
-      const response = await apiClient.post<AuthResponse>('/api/auth/register', data);
-      return response.data;
-    } catch (error) {
-      if ((error as any)?.code === 'ERR_NETWORK' || (error as any)?.message?.includes('Network Error')) {
-        return {
-          user: {
-            id: 'usr_' + Date.now(),
-            name: data.name,
-            email: data.email,
-            age: data.age || 25,
-            gender: data.gender || 'prefer_not_to_say',
-            phone: data.phone || '',
-            language: 'English',
-            created_at: new Date().toISOString(),
-          },
-          token: 'demo-jwt-token-' + Date.now(),
-          message: 'Registration successful (demo mode)',
-        };
-      }
-      throw error;
-    }
+    const response = await apiClient.post<BackendAuthResponse>('/api/v1/auth/register', {
+      email: data.email,
+      password: data.password ?? '',
+      full_name: data.name,
+      age: data.age,
+      gender: data.gender,
+      phone: data.phone,
+    });
+    return mapAuthResponse(response.data);
   },
 
   getProfile: async (): Promise<User> => {
-    try {
-      const response = await apiClient.get<User>('/api/auth/profile');
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response = await apiClient.get<BackendUser>('/api/v1/users/me');
+    return mapUser(response.data);
   },
 
   updateProfile: async (payload: ProfileUpdatePayload): Promise<User> => {
-    try {
-      const response = await apiClient.put<User>('/api/auth/profile', payload);
-      return response.data;
-    } catch (error) {
-      if ((error as any)?.code === 'ERR_NETWORK' || (error as any)?.message?.includes('Network Error')) {
-        return {
-          id: 'usr_demo_101',
-          name: payload.name,
-          email: 'user@aarogya360.ai',
-          age: payload.age,
-          gender: (payload.gender as any) || 'prefer_not_to_say',
-          phone: payload.phone,
-          language: payload.language || 'English',
-        };
-      }
-      throw error;
-    }
+    const response = await apiClient.put<BackendProfile>('/api/v1/users/me/profile', {
+      full_name: payload.name,
+      age: payload.age,
+      gender: payload.gender,
+      phone: payload.phone,
+      language_preference: toBackendLanguage(payload.language),
+    });
+    return mapUpdatedProfile(response.data);
   },
 };

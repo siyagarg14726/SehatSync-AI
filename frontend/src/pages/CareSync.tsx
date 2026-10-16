@@ -21,6 +21,10 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 type TabKey = 'medications' | 'prescriptions' | 'appointments' | 'caregivers';
+const today = () => {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
 
 export const CareSync: React.FC = () => {
   const queryClient = useQueryClient();
@@ -36,50 +40,49 @@ export const CareSync: React.FC = () => {
   const [newMed, setNewMed] = useState({
     name: '',
     dosage: '',
-    frequency: 'Once daily in morning',
-    time_of_day: 'morning' as any,
+    frequency: '',
     instructions: '',
   });
 
   const [newRx, setNewRx] = useState({
     name: '',
     doctor: '',
-    date: new Date().toISOString().split('T')[0],
+    date: today(),
     notes: '',
   });
 
   const [newApt, setNewApt] = useState({
     doctor_name: '',
-    specialty: 'Internal Medicine',
+    specialty: '',
     hospital_clinic: '',
-    date: new Date().toISOString().split('T')[0],
-    time: '10:00 AM',
+    date: today(),
+    time: '10:00',
     notes: '',
   });
 
   const [newCg, setNewCg] = useState({
     name: '',
     email: '',
-    relationship: 'Family Member',
+    relationship: '',
   });
 
   // Queries
-  const { data: medications, isLoading: medsLoading } = useQuery({
+  const { data: medications, isLoading: medsLoading, isError: medsError } = useQuery({
     queryKey: ['medications'],
     queryFn: () => careSyncApi.getMedications(),
   });
 
-  const { data: prescriptions, isLoading: rxLoading } = useQuery({
+  const { data: prescriptions, isLoading: rxLoading, isError: rxError } = useQuery({
     queryKey: ['prescriptions'],
     queryFn: () => careSyncApi.getPrescriptions(),
   });
 
-  const { data: appointments, isLoading: aptLoading } = useQuery({
+  const { data: appointments, isLoading: aptLoading, isError: aptError } = useQuery({
     queryKey: ['appointments'],
     queryFn: () => careSyncApi.getAppointments(),
   });
 
-  const { data: caregivers, isLoading: cgLoading } = useQuery({
+  const { data: caregivers, isLoading: cgLoading, isError: cgError } = useQuery({
     queryKey: ['caregivers'],
     queryFn: () => careSyncApi.getCaregivers(),
   });
@@ -89,11 +92,12 @@ export const CareSync: React.FC = () => {
     mutationFn: (data: typeof newMed) =>
       careSyncApi.addMedication({ ...data, is_active: true }),
     onSuccess: () => {
-      toast.success('Medication added to your active prescription regimen!');
+      toast.success('Medication schedule saved.');
       setShowAddMed(false);
-      setNewMed({ name: '', dosage: '', frequency: 'Once daily in morning', time_of_day: 'morning', instructions: '' });
+      setNewMed({ name: '', dosage: '', frequency: '', instructions: '' });
       queryClient.invalidateQueries({ queryKey: ['medications'] });
     },
+    onError: () => toast.error('Could not save the medication schedule.'),
   });
 
   const deleteMedMutation = useMutation({
@@ -102,38 +106,42 @@ export const CareSync: React.FC = () => {
       toast.success('Medication removed');
       queryClient.invalidateQueries({ queryKey: ['medications'] });
     },
+    onError: () => toast.error('Could not remove the medication.'),
   });
 
   const addRxMutation = useMutation({
     mutationFn: (data: typeof newRx) => careSyncApi.addPrescription(data),
     onSuccess: () => {
-      toast.success('Prescription metadata logged successfully!');
+      toast.success('Prescription details saved. No file was uploaded.');
       setShowAddRx(false);
-      setNewRx({ name: '', doctor: '', date: new Date().toISOString().split('T')[0], notes: '' });
+      setNewRx({ name: '', doctor: '', date: today(), notes: '' });
       queryClient.invalidateQueries({ queryKey: ['prescriptions'] });
     },
+    onError: () => toast.error('Could not save prescription details.'),
   });
 
   const addAptMutation = useMutation({
     mutationFn: (data: typeof newApt) =>
       careSyncApi.addAppointment({ ...data, status: 'upcoming' }),
     onSuccess: () => {
-      toast.success('Doctor appointment scheduled!');
+      toast.success('Appointment details saved to your care list. This does not book with a provider.');
       setShowAddApt(false);
-      setNewApt({ doctor_name: '', specialty: 'Internal Medicine', hospital_clinic: '', date: new Date().toISOString().split('T')[0], time: '10:00 AM', notes: '' });
+      setNewApt({ doctor_name: '', specialty: '', hospital_clinic: '', date: today(), time: '10:00', notes: '' });
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
+    onError: () => toast.error('Could not save appointment details.'),
   });
 
   const addCgMutation = useMutation({
     mutationFn: (data: typeof newCg) =>
       careSyncApi.addCaregiver(data.email, data.name, data.relationship),
     onSuccess: () => {
-      toast.success('Caregiver invited and consent recorded!');
+      toast.success('Care circle contact saved. No invitation was sent.');
       setShowAddCg(false);
-      setNewCg({ name: '', email: '', relationship: 'Family Member' });
+      setNewCg({ name: '', email: '', relationship: '' });
       queryClient.invalidateQueries({ queryKey: ['caregivers'] });
     },
+    onError: () => toast.error('Could not save the care circle contact.'),
   });
 
   const toggleConsentMutation = useMutation({
@@ -143,10 +151,16 @@ export const CareSync: React.FC = () => {
       toast.success('Caregiver authorization updated');
       queryClient.invalidateQueries({ queryKey: ['caregivers'] });
     },
+    onError: () => toast.error('Could not update care circle consent.'),
   });
 
   return (
     <div className="space-y-8">
+      {(medsError || rxError || aptError || cgError) && (
+        <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+          Some care information could not be loaded. Check your connection and try again.
+        </p>
+      )}
       {/* Module Header */}
       <div className="pb-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -155,11 +169,11 @@ export const CareSync: React.FC = () => {
               Care <span className="text-teal-600">Coordination</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-200">
-              Unified Care Ecosystem
+              Your care details
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            Orchestrate medications, digital prescriptions, specialist consultations, and your trusted care circle.
+            Keep medication schedules, prescription details, appointment notes, and care circle contacts together.
           </p>
         </div>
       </div>
@@ -221,7 +235,7 @@ export const CareSync: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-bold text-slate-800">Active Regimen</h2>
-              <p className="text-xs text-slate-400">Timely pharmaceutical tracking with adherence tracking</p>
+              <p className="text-xs text-slate-400">Medication schedules saved to your account</p>
             </div>
             <button
               onClick={() => setShowAddMed(true)}
@@ -234,6 +248,10 @@ export const CareSync: React.FC = () => {
 
           {medsLoading ? (
             <LoadingSpinner />
+          ) : medsError ? (
+            <p role="alert" className="text-sm text-rose-700">Medication schedules could not be loaded.</p>
+          ) : !medications?.length ? (
+            <p className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">No medication schedules have been saved.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {medications?.map((med) => (
@@ -277,21 +295,9 @@ export const CareSync: React.FC = () => {
 
                   <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-slate-400">Daily Status</span>
-                    <button
-                      onClick={() => {
-                        careSyncApi.toggleMedicationTaken(med.id, !med.taken_today);
-                        queryClient.invalidateQueries({ queryKey: ['medications'] });
-                        toast.success(`Dose marked ${!med.taken_today ? 'taken' : 'pending'}`);
-                      }}
-                      className={`px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        med.taken_today
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                          : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
-                      }`}
-                    >
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>{med.taken_today ? 'Taken Today' : 'Pending Dose'}</span>
-                    </button>
+                    <span className="text-xs text-slate-500" title="Dose logging is not available in the connected care service.">
+                      Dose logging unavailable
+                    </span>
                   </div>
                 </div>
               ))}
@@ -406,6 +412,10 @@ export const CareSync: React.FC = () => {
 
           {rxLoading ? (
             <LoadingSpinner />
+          ) : rxError ? (
+            <p role="alert" className="text-sm text-rose-700">Prescription records could not be loaded.</p>
+          ) : !prescriptions?.length ? (
+            <p className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">No prescription details have been saved.</p>
           ) : (
             <div className="space-y-3">
               {prescriptions?.map((rx) => (
@@ -542,8 +552,8 @@ export const CareSync: React.FC = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Doctor Consultations</h2>
-              <p className="text-xs text-slate-400">Scheduled clinical visits and telehealth sessions</p>
+              <h2 className="text-lg font-bold text-slate-800">Appointment Details</h2>
+              <p className="text-xs text-slate-400">Appointment details saved to your care list; no booking integration is connected.</p>
             </div>
             <button
               onClick={() => setShowAddApt(true)}
@@ -556,6 +566,10 @@ export const CareSync: React.FC = () => {
 
           {aptLoading ? (
             <LoadingSpinner />
+          ) : aptError ? (
+            <p role="alert" className="text-sm text-rose-700">Appointment details could not be loaded.</p>
+          ) : !appointments?.length ? (
+            <p className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">No appointment details have been saved.</p>
           ) : (
             <div className="space-y-3">
               {appointments?.map((apt) => (
@@ -673,9 +687,8 @@ export const CareSync: React.FC = () => {
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Time</label>
                       <input
-                        type="text"
+                        type="time"
                         required
-                        placeholder="10:30 AM"
                         value={newApt.time}
                         onChange={(e) => setNewApt({ ...newApt, time: e.target.value })}
                         className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none"
@@ -707,7 +720,7 @@ export const CareSync: React.FC = () => {
                       disabled={addAptMutation.isPending}
                       className="px-4 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-xs"
                     >
-                      Confirm Schedule
+                      Save Appointment Details
                     </button>
                   </div>
                 </form>
@@ -722,20 +735,24 @@ export const CareSync: React.FC = () => {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-slate-800">Caregiver Circle & Data Consent</h2>
-              <p className="text-xs text-slate-400">Control who can access your biometrics, emergency alerts, and logs</p>
+              <h2 className="text-lg font-bold text-slate-800">Care Circle & Data Consent</h2>
+              <p className="text-xs text-slate-400">Manage saved contacts and consent records. This screen does not send invitations.</p>
             </div>
             <button
               onClick={() => setShowAddCg(true)}
               className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Add Caregiver</span>
+              <span>Add Care Circle Contact</span>
             </button>
           </div>
 
           {cgLoading ? (
             <LoadingSpinner />
+          ) : cgError ? (
+            <p role="alert" className="text-sm text-rose-700">Care circle contacts could not be loaded.</p>
+          ) : !caregivers?.length ? (
+            <p className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">No care circle contacts have been saved.</p>
           ) : (
             <div className="space-y-3">
               {caregivers?.map((cg) => (
@@ -767,7 +784,7 @@ export const CareSync: React.FC = () => {
                         <ShieldAlert className="w-5 h-5 text-amber-500" />
                       )}
                       <span className="text-xs font-bold text-slate-700">
-                        {cg.consent_granted ? 'Authorized' : 'Access Revoked'}
+                        {cg.consent_granted ? 'Consent recorded' : 'Consent not granted'}
                       </span>
                     </div>
 
@@ -796,7 +813,7 @@ export const CareSync: React.FC = () => {
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in">
               <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <h3 className="font-bold text-slate-800 text-base">Invite Trusted Caregiver</h3>
+                  <h3 className="font-bold text-slate-800 text-base">Add Care Circle Contact</h3>
                   <button onClick={() => setShowAddCg(false)} className="text-slate-400 hover:text-slate-600">
                     <X className="w-5 h-5" />
                   </button>
@@ -838,9 +855,11 @@ export const CareSync: React.FC = () => {
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Relationship</label>
                     <select
                       value={newCg.relationship}
+                      required
                       onChange={(e) => setNewCg({ ...newCg, relationship: e.target.value })}
                       className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-200 focus:ring-2 focus:ring-teal-500 focus:outline-none bg-slate-50"
                     >
+                      <option value="">Choose a relationship</option>
                       <option value="Spouse / Partner">Spouse / Partner</option>
                       <option value="Child / Daughter / Son">Child / Daughter / Son</option>
                       <option value="Parent / Guardian">Parent / Guardian</option>
@@ -850,7 +869,7 @@ export const CareSync: React.FC = () => {
                   </div>
 
                   <p className="text-xs text-slate-500 leading-relaxed pt-1">
-                    By saving, you authorize this caregiver to view your vital logs and receive emergency escalations.
+                    No invitation is sent. Consent remains off until you explicitly enable access for this contact.
                   </p>
 
                   <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -866,7 +885,7 @@ export const CareSync: React.FC = () => {
                       disabled={addCgMutation.isPending}
                       className="px-4 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl shadow-xs"
                     >
-                      Send Caregiver Invite
+                      Save Contact
                     </button>
                   </div>
                 </form>

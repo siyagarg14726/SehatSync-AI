@@ -13,6 +13,9 @@ import Nutrition from './pages/Nutrition';
 import CareSync from './pages/CareSync';
 import Assistant from './pages/Assistant';
 import Profile from './pages/Profile';
+import NearbyCare from './pages/NearbyCare';
+import Counsellors from './pages/Counsellors';
+import HealthLibrary from './pages/HealthLibrary';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 
@@ -90,6 +93,10 @@ export const App: React.FC = () => {
             <Route path="wellness" element={<Wellness />} />
             <Route path="nutrition" element={<Nutrition />} />
             <Route path="caresync" element={<CareSync />} />
+            <Route path="nearby" element={<NearbyCare />} />
+            <Route path="counsellors" element={<Counsellors />} />
+            <Route path="library" element={<HealthLibrary />} />
+            <Route path="library/:articleId" element={<HealthLibrary />} />
             <Route path="assistant" element={<Assistant />} />
             <Route path="profile" element={<Profile />} />
           </Route>

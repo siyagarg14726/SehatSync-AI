@@ -1,4 +1,4 @@
-// Aarogya360 AI - Core TypeScript Definitions
+// SehatSync AI - Core TypeScript Definitions
 
 export interface User {
   id: string;
@@ -37,10 +37,9 @@ export interface ProfileUpdatePayload {
   gender?: string;
   phone?: string;
   language?: string;
-  health_goals?: string;
 }
 
-// Wellness / RakshakAI Types
+// Wellness Types
 export interface WellnessCheckIn {
   id?: string;
   user_id?: string;
@@ -50,15 +49,15 @@ export interface WellnessCheckIn {
   sleep_hours: number; // e.g. 7.5
   notes?: string;
   created_at?: string;
+  recorded_at?: string;
 }
 
 export interface WellnessInsight {
   id?: string;
   summary: string;
-  risk_level: 'low' | 'moderate' | 'elevated' | 'high';
+  risk_level: string;
   insights: string[];
   recommendations: string[];
-  gemini_response?: string;
   generated_at: string;
 }
 
@@ -89,8 +88,8 @@ export interface DietaryProfile {
 
 export interface Meal {
   name: string;
-  description: string;
-  calories: number;
+  description?: string;
+  calories?: number;
   protein_g?: number;
   carbs_g?: number;
   fat_g?: number;
@@ -103,14 +102,16 @@ export interface DayPlan {
   lunch: Meal;
   dinner: Meal;
   snack?: Meal;
-  total_calories: number;
+  total_calories?: number;
 }
 
 export interface MealPlan {
   id: string;
   title?: string;
   created_at: string;
-  weekly_budget_est_inr?: number;
+  daily_budget_estimate_inr?: number;
+  summary?: string;
+  grocery_highlights?: string[];
   days: DayPlan[];
 }
 
@@ -123,12 +124,12 @@ export interface HydrationData {
 export interface Habit {
   id: string;
   name: string;
-  category: 'nutrition' | 'fitness' | 'mindfulness' | 'hydration';
+  category?: 'nutrition' | 'fitness' | 'mindfulness' | 'hydration';
   completed: boolean;
   streak: number;
 }
 
-// CareSync Types
+// Care Coordination Types
 export interface Medication {
   id: string;
   name: string;

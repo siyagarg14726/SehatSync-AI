@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Heart, Lock, Mail, User, Sparkles, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Heart, Lock, Mail, User, Sparkles, ArrowRight } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export const Register: React.FC = () => {
@@ -10,15 +10,25 @@ export const Register: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    age: 28,
-    gender: 'female' as 'male' | 'female' | 'other' | 'prefer_not_to_say',
+    age: '' as number | '',
+    gender: '' as 'male' | 'female' | 'other' | 'prefer_not_to_say' | '',
     phone: '',
   });
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password) return;
-    await register(formData);
+    setSubmitError('');
+    try {
+      await register({
+        ...formData,
+        age: formData.age === '' ? undefined : formData.age,
+        gender: formData.gender || undefined,
+      });
+    } catch {
+      setSubmitError('Unable to create your account. Check your connection and try again.');
+    }
   };
 
   return (
@@ -105,7 +115,7 @@ export const Register: React.FC = () => {
                   min="1"
                   max="120"
                   value={formData.age}
-                  onChange={(e) => setFormData({ ...formData, age: Number(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, age: e.target.value ? Number(e.target.value) : '' })}
                   className="block w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-slate-50/50 focus:bg-white text-slate-800"
                 />
               </div>
@@ -116,9 +126,10 @@ export const Register: React.FC = () => {
                 </label>
                 <select
                   value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value as typeof formData.gender })}
                   className="block w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-slate-50/50 focus:bg-white text-slate-800"
                 >
+                  <option value="">Choose if you wish</option>
                   <option value="female">Female</option>
                   <option value="male">Male</option>
                   <option value="other">Other</option>
@@ -126,6 +137,8 @@ export const Register: React.FC = () => {
                 </select>
               </div>
             </div>
+
+            {submitError && <p role="alert" className="text-sm text-rose-700">{submitError}</p>}
 
             <div className="pt-3">
               <button
@@ -137,7 +150,7 @@ export const Register: React.FC = () => {
                   <LoadingSpinner size="sm" />
                 ) : (
                   <>
-                    <span>Create Free Account</span>
+                    <span>Create Account</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -157,8 +170,8 @@ export const Register: React.FC = () => {
         </div>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Your personal health data is strictly private and secure</span>
+          <Lock className="w-4 h-4 text-emerald-600" />
+          <span>Sign in is required to access your account.</span>
         </div>
       </div>
     </div>

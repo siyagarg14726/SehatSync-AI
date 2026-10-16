@@ -16,15 +16,15 @@ const initialMessages: ChatMessage[] = [
   {
     id: 'msg_welcome',
     sender: 'assistant',
-    text: `Namaste! I am **SehatSync AI**, your personal health intelligence guide.
+    text: `Welcome to Ask My Health. I can help with general health information and navigating your SehatSync account. I do not diagnose conditions or replace care from a qualified health professional.
 
-I can assist you with understanding your bio-telemetry, analyzing lifestyle habits, evaluating food synergies, and clarifying general wellness questions. How can I assist you with your health goals today?`,
+What would you like to learn about?`,
     timestamp: 'Just now',
     suggestions: [
-      'How to lower my evening stress and cortisol?',
-      'Suggest a high-protein vegetarian post-workout snack',
-      'Explain when to take my Vitamin D supplement',
-      'What are easy ways to increase daily hydration?',
+      'How can I prepare for a health appointment?',
+      'Where can I find my wellness check-ins?',
+      'What can a nutrition label tell me?',
+      'Where can I find general information about sleep?',
     ],
   },
 ];
@@ -90,6 +90,7 @@ export const Assistant: React.FC = () => {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8.5rem)] max-w-4xl mx-auto">
+      <h1 className="sr-only">Ask My Health</h1>
       {/* Medical Disclaimer Banner */}
       <div className="mb-3 p-3 rounded-2xl bg-amber-50/90 border border-amber-200/80 text-amber-900 flex items-start gap-2.5 shadow-xs shrink-0">
         <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -113,7 +114,7 @@ export const Assistant: React.FC = () => {
                   Intelligent Guide
                 </span>
               </div>
-              <p className="text-[11px] text-teal-600 font-medium">Ready to assist • 24/7 Context Aware</p>
+              <p className="text-[11px] text-teal-600 font-medium">General information · Not for emergencies</p>
             </div>
           </div>
 
@@ -203,7 +204,7 @@ export const Assistant: React.FC = () => {
                 <div className="w-2 h-2 rounded-full bg-teal-500 animate-bounce" />
                 <div className="w-2 h-2 rounded-full bg-teal-500 animate-bounce [animation-delay:-0.15s]" />
                 <div className="w-2 h-2 rounded-full bg-teal-500 animate-bounce [animation-delay:-0.3s]" />
-                <span className="text-xs text-slate-400 font-medium ml-1">Aarogya is thinking...</span>
+                <span className="text-xs text-slate-400 font-medium ml-1">SehatSync is responding...</span>
               </div>
             </div>
           )}

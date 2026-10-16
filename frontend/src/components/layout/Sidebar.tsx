@@ -12,7 +12,7 @@ import {
   MapPin,
   BookOpen,
   Users2,
-  CalendarCheck2,
+  ShieldAlert,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 
@@ -57,13 +57,13 @@ const navItems = [
   },
   {
     label: 'Ask My Health',
-    badge: 'AI Guide',
+    badge: 'AI assistant',
     to: '/assistant',
     icon: Bot,
     highlight: true,
   },
   {
-    label: 'Profile & Settings',
+    label: 'Settings',
     to: '/profile',
     icon: User,
   },
@@ -91,7 +91,7 @@ export const Sidebar: React.FC = () => {
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-6 space-y-1.5 overflow-y-auto">
         <div className="px-3 pb-2 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-          Core Health Modules
+          Your care
         </div>
 
         {navItems.map((item) => {
@@ -146,9 +146,9 @@ export const Sidebar: React.FC = () => {
         <div className="flex items-start gap-2.5">
           <ShieldAlert className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
           <div>
-            <p className="text-xs font-semibold text-teal-900">Health Guard Active</p>
+            <p className="text-xs font-semibold text-teal-900">Connected account</p>
             <p className="text-[11px] text-teal-700/80 mt-0.5 leading-snug">
-              RakshakAI & CareSync are monitoring your daily health metrics.
+              Your health information is shown only when it is available from your connected account.
             </p>
           </div>
         </div>
@@ -161,10 +161,10 @@ export const Sidebar: React.FC = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-slate-800 truncate">
-            {user?.name || 'Aarogya Member'}
+            {user?.name || 'Your account'}
           </p>
           <p className="text-xs text-slate-400 truncate">
-            {user?.email || 'member@aarogya360.ai'}
+            {user?.email || ''}
           </p>
         </div>
       </div>

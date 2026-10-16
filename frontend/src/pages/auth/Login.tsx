@@ -1,23 +1,24 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { Heart, Lock, Mail, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { Heart, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 export const Login: React.FC = () => {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
-    await login({ email, password });
-  };
-
-  const handleFillDemo = () => {
-    setEmail('patient@aarogya360.ai');
-    setPassword('AarogyaSecure2026!');
+    setSubmitError('');
+    try {
+      await login({ email, password });
+    } catch {
+      setSubmitError('Unable to sign in. Check your connection and credentials.');
+    }
   };
 
   return (
@@ -31,7 +32,7 @@ export const Login: React.FC = () => {
           Sehat<span className="text-teal-600">Sync</span> AI
         </h2>
         <p className="mt-2 text-sm text-slate-600">
-          Personalized Preventive Wellness & Connected Healthcare
+          Wellness tools and care details in one place
         </p>
       </div>
 
@@ -42,14 +43,6 @@ export const Login: React.FC = () => {
               <h3 className="text-lg font-bold text-slate-800">Welcome Back</h3>
               <p className="text-xs text-slate-500">Sign in to your care portal</p>
             </div>
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="text-xs font-semibold px-2.5 py-1 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors flex items-center gap-1 border border-teal-200 cursor-pointer"
-            >
-              <Sparkles className="w-3 h-3 text-teal-600" />
-              Quick Auto-Fill
-            </button>
           </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
@@ -66,7 +59,7 @@ export const Login: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="patient@aarogya360.ai"
+                  placeholder="you@example.com"
                   className="block w-full pl-10 pr-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-slate-50/50 focus:bg-white text-slate-800"
                 />
               </div>
@@ -77,9 +70,6 @@ export const Login: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Password
                 </label>
-                <a href="#forgot" onClick={(e) => { e.preventDefault(); alert('Demo password is AarogyaSecure2026!'); }} className="text-xs text-teal-600 hover:text-teal-700 font-medium">
-                  Forgot?
-                </a>
               </div>
               <div className="relative rounded-xl shadow-xs">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -96,6 +86,8 @@ export const Login: React.FC = () => {
               </div>
             </div>
 
+            {submitError && <p role="alert" className="text-sm text-rose-700">{submitError}</p>}
+
             <div className="pt-2">
               <button
                 type="submit"
@@ -106,7 +98,7 @@ export const Login: React.FC = () => {
                   <LoadingSpinner size="sm" />
                 ) : (
                   <>
-                    <span>Sign In to Aarogya360</span>
+                    <span>Sign in to SehatSync</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -128,7 +120,7 @@ export const Login: React.FC = () => {
         {/* Security badge footer */}
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>HIPAA & DISHA compliant end-to-end medical encryption</span>
+          <span>Your account is protected by your sign-in credentials</span>
         </div>
       </div>
     </div>

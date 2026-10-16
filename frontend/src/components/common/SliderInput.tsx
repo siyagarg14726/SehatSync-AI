@@ -2,7 +2,7 @@ import React from 'react';
 
 interface SliderInputProps {
   label: string;
-  value: number;
+  value: number | null;
   onChange: (value: number) => void;
   min?: number;
   max?: number;
@@ -30,6 +30,7 @@ export const SliderInput: React.FC<SliderInputProps> = ({
   disabled = false,
 }) => {
   const getBadgeColor = () => {
+    if (value == null) return 'bg-slate-100 text-slate-600 border-slate-200';
     if (colorScheme === 'rose') {
       return value > 6 ? 'bg-rose-100 text-rose-700 border-rose-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200';
     }
@@ -44,7 +45,7 @@ export const SliderInput: React.FC<SliderInputProps> = ({
       <div className="flex items-center justify-between">
         <label className="text-sm font-semibold text-slate-800">{label}</label>
         <div className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${getBadgeColor()}`}>
-          {value} {unit}
+          {value == null ? 'Choose' : `${value} ${unit}`}
         </div>
       </div>
 
@@ -56,7 +57,9 @@ export const SliderInput: React.FC<SliderInputProps> = ({
           min={min}
           max={max}
           step={step}
-          value={value}
+          value={value ?? min}
+          aria-label={label}
+          aria-valuetext={value == null ? 'Choose a value' : `${value}${unit ? ` ${unit}` : ''}`}
           disabled={disabled}
           onChange={(e) => onChange(Number(e.target.value))}
           className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-teal-600 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-teal-400"

@@ -4,7 +4,6 @@ import {
   Heart,
   LogOut,
   User as UserIcon,
-  Bell,
   Sparkles,
   ChevronDown,
 } from 'lucide-react';
@@ -47,8 +46,7 @@ export const Header: React.FC = () => {
             {getGreeting()}, <span className="text-teal-700">{user?.name?.split(' ')[0] || 'Member'}</span>
           </h2>
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Continuous Vitals Telemetry Active</span>
+            <span>Welcome to your personal care space</span>
           </div>
         </div>
       </div>
@@ -64,16 +62,6 @@ export const Header: React.FC = () => {
           <span>Ask My Health AI</span>
         </button>
 
-        {/* Notification Bell */}
-        <button
-          onClick={() => toast('No urgent medical alerts. All vitals look balanced.', { icon: '🔔' })}
-          className="p-2 rounded-xl text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors relative"
-          title="Notifications"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-teal-500" />
-        </button>
-
         {/* User Avatar & Dropdown */}
         <div className="relative">
           <button
@@ -87,7 +75,7 @@ export const Header: React.FC = () => {
               <p className="text-xs font-bold text-slate-700 leading-tight">
                 {user?.name || 'My Account'}
               </p>
-              <p className="text-[10px] text-teal-600 font-medium">Verified Patient</p>
+              <p className="text-[10px] text-teal-600 font-medium">Account</p>
             </div>
             <ChevronDown className="w-4 h-4 text-slate-400 hidden md:block" />
           </button>
@@ -99,7 +87,7 @@ export const Header: React.FC = () => {
               onClick={() => setDropdownOpen(false)}
             >
               <div className="px-4 py-2 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-800">{user?.name || 'Aarogya User'}</p>
+                <p className="text-xs font-bold text-slate-800">{user?.name || 'Your account'}</p>
                 <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
               </div>
 
@@ -108,7 +96,7 @@ export const Header: React.FC = () => {
                 className="w-full px-4 py-2 text-left text-xs text-slate-700 hover:bg-teal-50 hover:text-teal-700 flex items-center gap-2 font-medium"
               >
                 <UserIcon className="w-4 h-4 text-slate-400" />
-                Profile & Health Goals
+                Profile & Settings
               </button>
 
               <button

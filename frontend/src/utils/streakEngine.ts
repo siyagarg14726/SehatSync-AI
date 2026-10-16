@@ -1,10 +1,11 @@
-// SehatSync AI - Streak & Wellness Progress Calculation Engine
-
 export interface StreakStats {
   currentStreak: number;
   longestStreak: number;
   lastCheckInDate: string | null;
   isActiveToday: boolean;
+  checkInsThisWeek: number;
+  weeklyGoal: number;
+  weeklyGoalProgress: number;
   weeklyCalendar: Array<{
     dateStr: string;
     dayLabel: string;
@@ -19,130 +20,130 @@ export interface StreakStats {
     description: string;
     icon: string;
     unlocked: boolean;
-    progress: number; // 0 to 100
+    progress: number;
   }>;
 }
 
-/**
- * Calculates genuine consecutive-day streaks from check-in dates.
- * Discards duplicates on the same date and correctly handles missed calendar days.
- */
+const formatDateKey = (date: Date): string =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+const parseDateKey = (value: string): string | null => {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+      ? value
+      : null;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : formatDateKey(date);
+};
+
+const differenceInDays = (newer: string, older: string): number => {
+  const [newerYear, newerMonth, newerDay] = newer.split('-').map(Number);
+  const [olderYear, olderMonth, olderDay] = older.split('-').map(Number);
+  return (
+    Date.UTC(newerYear, newerMonth - 1, newerDay) -
+    Date.UTC(olderYear, olderMonth - 1, olderDay)
+  ) / 86_400_000;
+};
+
 export function calculateWellnessStreak(checkInDates: string[]): StreakStats {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
-  // Normalize and deduplicate dates (formatted YYYY-MM-DD)
-  const uniqueDateSet = new Set<string>();
-  checkInDates.forEach((d) => {
-    if (!d) return;
-    try {
-      const dt = new Date(d);
-      if (!isNaN(dt.getTime())) {
-        const y = dt.getFullYear();
-        const m = String(dt.getMonth() + 1).padStart(2, '0');
-        const day = String(dt.getDate()).padStart(2, '0');
-        uniqueDateSet.add(`${y}-${m}-${day}`);
-      }
-    } catch {
-      // Ignore invalid date strings
-    }
-  });
-
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const todayStr = formatDateKey(today);
+  const uniqueDateSet = new Set(
+    checkInDates
+      .map(parseDateKey)
+      .filter((date): date is string => Boolean(date && date <= todayStr)),
+  );
+  const sortedDates = Array.from(uniqueDateSet).sort();
   const isActiveToday = uniqueDateSet.has(todayStr);
 
-  // Calculate current streak
   let currentStreak = 0;
-  let checkPointer = new Date(today);
-
-  // If today is not checked in yet, streak could still be alive if yesterday was checked in
-  if (!isActiveToday) {
-    checkPointer.setDate(checkPointer.getDate() - 1);
+  const streakStart = new Date(today);
+  if (!isActiveToday) streakStart.setDate(streakStart.getDate() - 1);
+  let pointer = formatDateKey(streakStart);
+  while (uniqueDateSet.has(pointer)) {
+    currentStreak += 1;
+    streakStart.setDate(streakStart.getDate() - 1);
+    pointer = formatDateKey(streakStart);
   }
 
-  while (true) {
-    const y = checkPointer.getFullYear();
-    const m = String(checkPointer.getMonth() + 1).padStart(2, '0');
-    const d = String(checkPointer.getDate()).padStart(2, '0');
-    const dateKey = `${y}-${m}-${d}`;
-
-    if (uniqueDateSet.has(dateKey)) {
-      currentStreak += 1;
-      checkPointer.setDate(checkPointer.getDate() - 1);
-    } else {
-      break;
-    }
+  let longestStreak = 0;
+  let consecutiveRun = 0;
+  let previousDate: string | null = null;
+  for (const date of sortedDates) {
+    consecutiveRun = previousDate && differenceInDays(date, previousDate) === 1
+      ? consecutiveRun + 1
+      : 1;
+    longestStreak = Math.max(longestStreak, consecutiveRun);
+    previousDate = date;
   }
 
-  // Build weekly calendar (last 7 days ending today)
-  const weeklyCalendar = [];
+  const weeklyCalendar: StreakStats['weeklyCalendar'] = [];
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  let weekCheckInsCount = 0;
-
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const dateKey = `${y}-${m}-${day}`;
-    const isChecked = uniqueDateSet.has(dateKey);
-    if (isChecked) weekCheckInsCount += 1;
-
+  for (let offset = 6; offset >= 0; offset -= 1) {
+    const day = new Date(today);
+    day.setDate(day.getDate() - offset);
+    const dateStr = formatDateKey(day);
     weeklyCalendar.push({
-      dateStr: dateKey,
-      dayLabel: dayNames[d.getDay()],
-      dayNumber: d.getDate(),
-      isCheckedIn: isChecked,
-      isToday: dateKey === todayStr,
+      dateStr,
+      dayLabel: dayNames[day.getDay()],
+      dayNumber: day.getDate(),
+      isCheckedIn: uniqueDateSet.has(dateStr),
+      isToday: dateStr === todayStr,
     });
   }
 
-  const completionRate7d = Math.round((weekCheckInsCount / 7) * 100);
-
-  // Gamification Milestones & Badges
-  const earnedBadges = [
-    {
-      id: 'first_step',
-      title: 'First Step',
-      description: 'Logged your first vital check-in',
-      icon: '🌱',
-      unlocked: uniqueDateSet.size >= 1,
-      progress: Math.min(100, Math.round((uniqueDateSet.size / 1) * 100)),
-    },
-    {
-      id: 'rhythm_builder',
-      title: 'Rhythm Builder',
-      description: '3 consecutive days of mindful check-ins',
-      icon: '🔥',
-      unlocked: currentStreak >= 3,
-      progress: Math.min(100, Math.round((currentStreak / 3) * 100)),
-    },
-    {
-      id: 'weekly_harmony',
-      title: 'Weekly Harmony',
-      description: 'Complete 7 days of verified check-ins',
-      icon: '🏆',
-      unlocked: currentStreak >= 7 || uniqueDateSet.size >= 7,
-      progress: Math.min(100, Math.round((Math.max(currentStreak, uniqueDateSet.size) / 7) * 100)),
-    },
-    {
-      id: 'wellness_champion',
-      title: 'Wellness Champion',
-      description: '14 consecutive days of steady tracking',
-      icon: '⭐',
-      unlocked: currentStreak >= 14,
-      progress: Math.min(100, Math.round((currentStreak / 14) * 100)),
-    },
-  ];
+  const checkInsThisWeek = weeklyCalendar.filter((day) => day.isCheckedIn).length;
+  const weeklyGoal = 5;
+  const weeklyGoalProgress = Math.min(100, Math.round((checkInsThisWeek / weeklyGoal) * 100));
 
   return {
     currentStreak,
-    longestStreak: Math.max(currentStreak, uniqueDateSet.size),
-    lastCheckInDate: uniqueDateSet.size > 0 ? Array.from(uniqueDateSet).sort().reverse()[0] : null,
+    longestStreak,
+    lastCheckInDate: sortedDates.length ? sortedDates[sortedDates.length - 1] : null,
     isActiveToday,
+    checkInsThisWeek,
+    weeklyGoal,
+    weeklyGoalProgress,
     weeklyCalendar,
-    completionRate7d,
-    earnedBadges,
+    completionRate7d: Math.round((checkInsThisWeek / 7) * 100),
+    earnedBadges: [
+      {
+        id: 'first_step',
+        title: 'First Step',
+        description: 'Log your first daily wellness check-in',
+        icon: '🌱',
+        unlocked: sortedDates.length > 0,
+        progress: sortedDates.length > 0 ? 100 : 0,
+      },
+      {
+        id: 'rhythm_builder',
+        title: 'Rhythm Builder',
+        description: 'Check in on three consecutive days',
+        icon: '🔥',
+        unlocked: longestStreak >= 3,
+        progress: Math.min(100, Math.round((longestStreak / 3) * 100)),
+      },
+      {
+        id: 'weekly_harmony',
+        title: 'Weekly Harmony',
+        description: `Reach ${weeklyGoal} check-ins in one week`,
+        icon: '🏆',
+        unlocked: weeklyCalendar.filter((day) => day.isCheckedIn).length >= weeklyGoal,
+        progress: weeklyGoalProgress,
+      },
+      {
+        id: 'wellness_champion',
+        title: 'Wellness Champion',
+        description: 'Check in on fourteen consecutive days',
+        icon: '⭐',
+        unlocked: longestStreak >= 14,
+        progress: Math.min(100, Math.round((longestStreak / 14) * 100)),
+      },
+    ],
   };
 }

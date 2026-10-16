@@ -4,6 +4,13 @@ import { LoginCredentials, RegisterData, ProfileUpdatePayload } from '../types';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
+const getErrorMessage = (error: any, fallback: string): string => {
+  const detail = error.response?.data?.detail;
+  if (typeof detail === 'string') return detail;
+  if (error.code === 'ERR_NETWORK') return fallback;
+  return error.response?.data?.message || fallback;
+};
+
 export const useAuth = () => {
   const { user, token, isAuthenticated, isLoading, login, logout, updateUser, setLoading } = useAuthStore();
   const navigate = useNavigate();
@@ -17,8 +24,7 @@ export const useAuth = () => {
       navigate('/');
       return res;
     } catch (error: any) {
-      const msg = error.response?.data?.message || error.message || 'Login failed. Please check your credentials.';
-      toast.error(msg);
+      toast.error(getErrorMessage(error, 'Unable to sign in. Check your connection and credentials.'));
       throw error;
     } finally {
       setLoading(false);
@@ -30,12 +36,11 @@ export const useAuth = () => {
       setLoading(true);
       const res = await authApi.register(data);
       login(res.user, res.token);
-      toast.success('Registration successful! Welcome to Aarogya360 AI.');
+      toast.success('Registration successful! Welcome to SehatSync AI.');
       navigate('/');
       return res;
     } catch (error: any) {
-      const msg = error.response?.data?.message || error.message || 'Registration failed.';
-      toast.error(msg);
+      toast.error(getErrorMessage(error, 'Unable to create your account. Check your connection and try again.'));
       throw error;
     } finally {
       setLoading(false);

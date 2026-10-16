@@ -15,7 +15,7 @@ interface AuthState {
 const STORAGE_KEY_TOKEN = 'aarogya360_token';
 const STORAGE_KEY_USER = 'aarogya360_user';
 
-// Demo initial user for rich interactive experience if no backend is running
+// Restore an existing authenticated session when available.
 const getInitialState = () => {
   try {
     const token = localStorage.getItem(STORAGE_KEY_TOKEN);

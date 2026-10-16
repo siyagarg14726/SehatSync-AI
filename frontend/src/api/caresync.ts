@@ -1,259 +1,175 @@
 import apiClient from './axios';
-import { Medication, Prescription, Appointment, Caregiver } from '../types';
+import { Appointment, Caregiver, Medication, Prescription } from '../types';
 
-const defaultMedications: Medication[] = [
-  {
-    id: 'med_1',
-    name: 'Metformin Hydrochloride',
-    dosage: '500 mg',
-    frequency: 'Twice daily after meals',
-    time_of_day: 'morning',
-    instructions: 'Take with food to prevent gastric discomfort',
-    is_active: true,
-    taken_today: true,
-  },
-  {
-    id: 'med_2',
-    name: 'Telmisartan',
-    dosage: '40 mg',
-    frequency: 'Once daily in morning',
-    time_of_day: 'morning',
-    instructions: 'Blood pressure maintenance',
-    is_active: true,
-    taken_today: true,
-  },
-  {
-    id: 'med_3',
-    name: 'Vitamin D3 Cholecalciferol',
-    dosage: '60,000 IU',
-    frequency: 'Once weekly on Sunday',
-    time_of_day: 'morning',
-    instructions: 'Take after a fatty meal or milk for absorption',
-    is_active: true,
-    taken_today: false,
-  },
-  {
-    id: 'med_4',
-    name: 'Ashwagandha Extract',
-    dosage: '300 mg',
-    frequency: 'Once daily before bedtime',
-    time_of_day: 'night',
-    instructions: 'Cortisol regulation and deep sleep support',
-    is_active: true,
-    taken_today: false,
-  },
-];
+interface MedicationResponse {
+  id: number;
+  name: string;
+  dosage: string;
+  frequency: string;
+  reminders?: string | null;
+  instructions?: string | null;
+  is_active: boolean;
+}
 
-const defaultPrescriptions: Prescription[] = [
-  {
-    id: 'rx_1',
-    name: 'Annual Preventive Health Evaluation',
-    doctor: 'Dr. Priya Sharma, MD (Internal Medicine)',
-    date: '2026-09-15',
-    notes: 'HbA1c steady at 5.6%. Continue moderate aerobic activity and low GI diet.',
-    file_url: 'https://aarogya360.ai/docs/rx_annual_2026.pdf',
-  },
-  {
-    id: 'rx_2',
-    name: 'Cardiology Follow-up & ECG Review',
-    doctor: 'Dr. Rajesh Deshmukh, DM (Cardiology)',
-    date: '2026-08-10',
-    notes: 'Normal sinus rhythm. Blood pressure controlled at 118/76 mmHg.',
-    file_url: 'https://aarogya360.ai/docs/rx_cardio_aug.pdf',
-  },
-  {
-    id: 'rx_3',
-    name: 'Dermatology & Vitamin Assessment',
-    doctor: 'Dr. Ananya Ray, MD (Dermatology)',
-    date: '2026-07-04',
-    notes: 'Advised Vitamin D3 supplement and daily broad-spectrum SPF 50 sunscreen.',
-  },
-];
+interface PrescriptionResponse {
+  id: number;
+  filename: string;
+  doctor_name?: string | null;
+  prescription_date: string;
+  notes?: string | null;
+  file_url?: string | null;
+}
 
-const defaultAppointments: Appointment[] = [
-  {
-    id: 'apt_1',
-    doctor_name: 'Dr. Priya Sharma',
-    specialty: 'Endocrinology & General Medicine',
-    hospital_clinic: 'Apollo Health City, Jubilee Hills',
-    date: '2026-10-24',
-    time: '10:30 AM',
-    status: 'upcoming',
-    notes: 'Quarterly blood panel review and wellness metrics discussion.',
-  },
-  {
-    id: 'apt_2',
-    doctor_name: 'Dr. Vikram Malhotra',
-    specialty: 'Ophthalmology',
-    hospital_clinic: 'Centre For Sight Eye Institute',
-    date: '2026-11-05',
-    time: '03:15 PM',
-    status: 'upcoming',
-    notes: 'Routine digital eye strain and refraction check.',
-  },
-  {
-    id: 'apt_3',
-    doctor_name: 'Dr. Rajesh Deshmukh',
-    specialty: 'Cardiology',
-    hospital_clinic: 'Max Super Speciality Hospital',
-    date: '2026-08-10',
-    time: '11:00 AM',
-    status: 'completed',
-    notes: 'Annual treadmill test and lipid profile review completed with normal status.',
-  },
-];
+interface AppointmentResponse {
+  id: number;
+  doctor_name: string;
+  specialty: string;
+  appointment_datetime: string;
+  location?: string | null;
+  notes?: string | null;
+  status: 'scheduled' | 'completed' | 'cancelled' | string;
+}
 
-const defaultCaregivers: Caregiver[] = [
-  {
-    id: 'cg_1',
-    email: 'kavita.sharma@example.com',
-    name: 'Kavita Sharma',
-    relationship: 'Spouse / Primary Contact',
-    consent_granted: true,
-    added_at: '2026-01-15',
-  },
-  {
-    id: 'cg_2',
-    email: 'arjun.nair@example.com',
-    name: 'Arjun Nair',
-    relationship: 'Son / Emergency Contact',
-    consent_granted: true,
-    added_at: '2026-03-22',
-  },
-  {
-    id: 'cg_3',
-    email: 'dr.deshmukh_clinic@healthcare.in',
-    name: 'Care Coordinator Max Hospital',
-    relationship: 'Attending Physician Assistant',
-    consent_granted: false,
-    added_at: '2026-06-18',
-  },
-];
+interface CaregiverResponse {
+  id: number;
+  caregiver_email: string;
+  caregiver_name?: string | null;
+  relationship_type?: string | null;
+  consent_granted: boolean;
+  created_at: string;
+}
+
+const toDateOnly = (value: string): string => value.slice(0, 10);
+const today = (): string => {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
+const mapMedication = (medication: MedicationResponse): Medication => ({
+  id: String(medication.id),
+  name: medication.name,
+  dosage: medication.dosage,
+  frequency: medication.frequency,
+  instructions: medication.instructions ?? undefined,
+  is_active: medication.is_active,
+});
+
+const mapPrescription = (prescription: PrescriptionResponse): Prescription => ({
+  id: String(prescription.id),
+  name: prescription.filename,
+  doctor: prescription.doctor_name ?? '',
+  date: prescription.prescription_date,
+  notes: prescription.notes ?? undefined,
+  file_url: prescription.file_url ?? undefined,
+});
+
+const mapAppointment = (appointment: AppointmentResponse): Appointment => {
+  const scheduledAt = new Date(appointment.appointment_datetime);
+  return {
+    id: String(appointment.id),
+    doctor_name: appointment.doctor_name,
+    specialty: appointment.specialty,
+    hospital_clinic: appointment.location ?? '',
+    date: toDateOnly(appointment.appointment_datetime),
+    time: Number.isNaN(scheduledAt.getTime())
+      ? ''
+      : scheduledAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+    status: appointment.status === 'scheduled' ? 'upcoming' : appointment.status as Appointment['status'],
+    notes: appointment.notes ?? undefined,
+  };
+};
+
+const mapCaregiver = (caregiver: CaregiverResponse): Caregiver => ({
+  id: String(caregiver.id),
+  email: caregiver.caregiver_email,
+  name: caregiver.caregiver_name ?? '',
+  relationship: caregiver.relationship_type ?? '',
+  consent_granted: caregiver.consent_granted,
+  added_at: toDateOnly(caregiver.created_at),
+});
 
 export const careSyncApi = {
-  // Medications
   getMedications: async (): Promise<Medication[]> => {
-    try {
-      const response = await apiClient.get<Medication[]>('/api/caresync/medications');
-      return response.data;
-    } catch (error) {
-      return defaultMedications;
-    }
+    const response = await apiClient.get<MedicationResponse[]>('/api/v1/caresync/medications');
+    return response.data.map(mapMedication);
   },
 
   addMedication: async (medication: Omit<Medication, 'id'>): Promise<Medication> => {
-    try {
-      const response = await apiClient.post<Medication>('/api/caresync/medications', medication);
-      return response.data;
-    } catch (error) {
-      const newMed: Medication = {
-        ...medication,
-        id: 'med_' + Date.now(),
-        taken_today: false,
-      };
-      return newMed;
-    }
+    const response = await apiClient.post<MedicationResponse>('/api/v1/caresync/medications', {
+      name: medication.name,
+      dosage: medication.dosage,
+      frequency: medication.frequency,
+      start_date: today(),
+      instructions: medication.instructions,
+    });
+    return mapMedication(response.data);
   },
 
-  toggleMedicationTaken: async (medId: string, taken: boolean): Promise<boolean> => {
-    try {
-      await apiClient.post(`/api/caresync/medications/${medId}/toggle-taken`, { taken });
-      return true;
-    } catch (error) {
-      return true;
-    }
+  toggleMedicationTaken: async (): Promise<never> => {
+    throw new Error('Dose logging is not available in the connected care service.');
   },
 
   deleteMedication: async (id: string): Promise<boolean> => {
-    try {
-      await apiClient.delete(`/api/caresync/medications/${id}`);
-      return true;
-    } catch (error) {
-      return true;
-    }
+    await apiClient.delete(`/api/v1/caresync/medications/${id}`);
+    return true;
   },
 
-  // Prescriptions
   getPrescriptions: async (): Promise<Prescription[]> => {
-    try {
-      const response = await apiClient.get<Prescription[]>('/api/caresync/prescriptions');
-      return response.data;
-    } catch (error) {
-      return defaultPrescriptions;
-    }
+    const response = await apiClient.get<PrescriptionResponse[]>('/api/v1/caresync/prescriptions');
+    return response.data.map(mapPrescription);
   },
 
-  addPrescription: async (data: Omit<Prescription, 'id'>): Promise<Prescription> => {
-    try {
-      const response = await apiClient.post<Prescription>('/api/caresync/prescriptions', data);
-      return response.data;
-    } catch (error) {
-      return {
-        ...data,
-        id: 'rx_' + Date.now(),
-      };
-    }
+  addPrescription: async (prescription: Omit<Prescription, 'id'>): Promise<Prescription> => {
+    const response = await apiClient.post<PrescriptionResponse>('/api/v1/caresync/prescriptions', {
+      filename: prescription.name,
+      doctor_name: prescription.doctor || undefined,
+      prescription_date: prescription.date,
+      notes: prescription.notes,
+      file_url: prescription.file_url,
+    });
+    return mapPrescription(response.data);
   },
 
-  // Appointments
   getAppointments: async (): Promise<Appointment[]> => {
-    try {
-      const response = await apiClient.get<Appointment[]>('/api/caresync/appointments');
-      return response.data;
-    } catch (error) {
-      return defaultAppointments;
-    }
+    const response = await apiClient.get<AppointmentResponse[]>('/api/v1/caresync/appointments');
+    return response.data.map(mapAppointment);
   },
 
-  addAppointment: async (data: Omit<Appointment, 'id'>): Promise<Appointment> => {
-    try {
-      const response = await apiClient.post<Appointment>('/api/caresync/appointments', data);
-      return response.data;
-    } catch (error) {
-      return {
-        ...data,
-        id: 'apt_' + Date.now(),
-      };
+  addAppointment: async (appointment: Omit<Appointment, 'id'>): Promise<Appointment> => {
+    const appointmentDate = new Date(`${appointment.date}T${appointment.time}`);
+    if (Number.isNaN(appointmentDate.getTime())) {
+      throw new Error('Enter a valid appointment date and time.');
     }
+    const response = await apiClient.post<AppointmentResponse>('/api/v1/caresync/appointments', {
+      doctor_name: appointment.doctor_name,
+      specialty: appointment.specialty,
+      appointment_datetime: appointmentDate.toISOString(),
+      location: appointment.hospital_clinic,
+      notes: appointment.notes,
+      status: 'scheduled',
+    });
+    return mapAppointment(response.data);
   },
 
-  // Caregivers
   getCaregivers: async (): Promise<Caregiver[]> => {
-    try {
-      const response = await apiClient.get<Caregiver[]>('/api/caresync/caregivers');
-      return response.data;
-    } catch (error) {
-      return defaultCaregivers;
-    }
+    const response = await apiClient.get<CaregiverResponse[]>('/api/v1/caresync/caregivers');
+    return response.data.map(mapCaregiver);
   },
 
   addCaregiver: async (email: string, name: string, relationship: string): Promise<Caregiver> => {
-    try {
-      const response = await apiClient.post<Caregiver>('/api/caresync/caregivers', {
-        email,
-        name,
-        relationship,
-        consent_granted: true,
-      });
-      return response.data;
-    } catch (error) {
-      return {
-        id: 'cg_' + Date.now(),
-        email,
-        name,
-        relationship,
-        consent_granted: true,
-        added_at: new Date().toISOString().split('T')[0],
-      };
-    }
+    const response = await apiClient.post<CaregiverResponse>('/api/v1/caresync/caregivers', {
+      caregiver_email: email,
+      caregiver_name: name,
+      relationship_type: relationship,
+      consent_granted: false,
+    });
+    return mapCaregiver(response.data);
   },
 
   toggleCaregiverConsent: async (id: string, consent: boolean): Promise<boolean> => {
-    try {
-      await apiClient.patch(`/api/caresync/caregivers/${id}/consent`, { consent_granted: consent });
-      return true;
-    } catch (error) {
-      return true;
-    }
+    await apiClient.patch(`/api/v1/caresync/caregivers/${id}/consent`, {
+      consent_granted: consent,
+    });
+    return true;
   },
 };

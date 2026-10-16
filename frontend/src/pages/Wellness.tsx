@@ -31,17 +31,17 @@ export const Wellness: React.FC = () => {
   const queryClient = useQueryClient();
 
   // Form state for daily check-in
-  const [stress, setStress] = useState<number>(4);
-  const [fatigue, setFatigue] = useState<number>(3);
-  const [mood, setMood] = useState<number>(8);
-  const [sleepHours, setSleepHours] = useState<number>(7.5);
+  const [stress, setStress] = useState<number | null>(null);
+  const [fatigue, setFatigue] = useState<number | null>(null);
+  const [mood, setMood] = useState<number | null>(null);
+  const [sleepHours, setSleepHours] = useState<number | ''>('');
   const [notes, setNotes] = useState<string>('');
 
   // AI Insights state
   const [currentInsight, setCurrentInsight] = useState<WellnessInsight | null>(null);
 
   // Queries
-  const { data: trends, isLoading: trendsLoading } = useQuery({
+  const { data: trends, isLoading: trendsLoading, isError: trendsError } = useQuery({
     queryKey: ['wellness-trends-30d'],
     queryFn: () => wellnessApi.getWellnessTrends(30),
   });
@@ -50,7 +50,8 @@ export const Wellness: React.FC = () => {
   const checkInMutation = useMutation({
     mutationFn: (data: WellnessCheckIn) => wellnessApi.submitCheckIn(data),
     onSuccess: () => {
-      toast.success('Daily wellness check-in logged successfully!');
+      toast.success('Your wellness check-in was saved.');
+      queryClient.invalidateQueries({ queryKey: ['wellness-history'] });
       queryClient.invalidateQueries({ queryKey: ['wellness-latest'] });
       queryClient.invalidateQueries({ queryKey: ['wellness-trends-30d'] });
       queryClient.invalidateQueries({ queryKey: ['wellness-trends-7d'] });
@@ -65,7 +66,7 @@ export const Wellness: React.FC = () => {
     mutationFn: () => wellnessApi.getAiInsights(),
     onSuccess: (data) => {
       setCurrentInsight(data);
-      toast.success('Gemini AI clinical insights refreshed!');
+      toast.success('Wellness insights refreshed.');
     },
     onError: () => {
       toast.error('Could not generate insights right now.');
@@ -74,6 +75,10 @@ export const Wellness: React.FC = () => {
 
   const handleSubmitCheckIn = (e: React.FormEvent) => {
     e.preventDefault();
+    if (stress == null || fatigue == null || mood == null || sleepHours === '') {
+      toast.error('Complete each check-in field before saving.');
+      return;
+    }
     checkInMutation.mutate({
       stress,
       fatigue,
@@ -90,14 +95,14 @@ export const Wellness: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800">
-              My <span className="text-teal-600">Wellness Vitals</span>
+              My <span className="text-teal-600">Wellness</span>
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-teal-100 text-teal-800 border border-teal-200">
-              Smart Telemetry
+              Daily check-in
             </span>
           </div>
           <p className="mt-1 text-sm text-slate-500">
-            Monitor daily nervous system fatigue, mood variance, and sleep architecture powered by explainable AI insights.
+            Record your own mood, stress, fatigue, and sleep notes. Your entries are personal self-reports, not a medical assessment.
           </p>
         </div>
 
@@ -111,7 +116,7 @@ export const Wellness: React.FC = () => {
           ) : (
             <Sparkles className="w-4 h-4 text-emerald-200" />
           )}
-          <span>Generate Gemini AI Insights</span>
+          <span>Generate wellness insights</span>
         </button>
       </div>
 
@@ -123,8 +128,8 @@ export const Wellness: React.FC = () => {
               <Activity className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800">Daily Bio Check-In</h2>
-              <p className="text-xs text-slate-400">Log vitals for algorithmic calibration</p>
+              <h2 className="text-base font-bold text-slate-800">Daily wellness check-in</h2>
+              <p className="text-xs text-slate-400">Your self-reported wellness information</p>
             </div>
           </div>
 
@@ -171,8 +176,8 @@ export const Wellness: React.FC = () => {
                   <Moon className="w-4 h-4 text-indigo-500" />
                   Sleep Duration (Hours)
                 </label>
-                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                  {sleepHours} hrs
+                      <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                        {sleepHours === '' ? 'Choose duration' : `${sleepHours} hrs`}
                 </span>
               </div>
               <input
@@ -181,7 +186,7 @@ export const Wellness: React.FC = () => {
                 min="0"
                 max="24"
                 value={sleepHours}
-                onChange={(e) => setSleepHours(Number(e.target.value))}
+                onChange={(e) => setSleepHours(e.target.value ? Number(e.target.value) : '')}
                 className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-slate-50/50 text-slate-800 font-medium"
                 required
               />
@@ -195,7 +200,7 @@ export const Wellness: React.FC = () => {
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="E.g. Mild headache around 4 PM, slept early, took herbal tea..."
+                placeholder="Optional note about your day"
                 className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-slate-50/50 text-slate-800 placeholder-slate-400 resize-none"
               />
             </div>
@@ -210,7 +215,7 @@ export const Wellness: React.FC = () => {
               ) : (
                 <>
                   <CheckCircle className="w-4 h-4" />
-                  <span>Submit Today's Bio Log</span>
+                  <span>Save today's check-in</span>
                 </>
               )}
             </button>
@@ -226,15 +231,15 @@ export const Wellness: React.FC = () => {
                   <Brain className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-800">RakshakAI Clinical Intelligence</h2>
-                  <p className="text-xs text-slate-400">Powered by Google Gemini Pro Healthcare Model</p>
+                  <h2 className="text-base font-bold text-slate-800">Wellness insights</h2>
+                  <p className="text-xs text-slate-400">General reflections based on saved check-ins</p>
                 </div>
               </div>
 
               {currentInsight?.risk_level && (
                 <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Risk Level: Low
+                  {currentInsight.risk_level}
                 </span>
               )}
             </div>
@@ -243,7 +248,7 @@ export const Wellness: React.FC = () => {
               <div className="mt-5 space-y-5">
                 <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-100">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-teal-800 mb-1">
-                    Telemetry Synthesis
+                    Summary
                   </h3>
                   <p className="text-sm font-medium text-slate-700 leading-relaxed">
                     {currentInsight.summary}
@@ -280,20 +285,16 @@ export const Wellness: React.FC = () => {
                   </ul>
                 </div>
 
-                {currentInsight.gemini_response && (
-                  <div className="p-4 rounded-2xl bg-slate-900 text-slate-100 text-xs font-mono whitespace-pre-wrap leading-relaxed">
-                    {currentInsight.gemini_response}
-                  </div>
-                )}
+                <p className="text-xs text-slate-500">Insights are informational and do not replace care from a qualified health professional.</p>
               </div>
             ) : (
               <div className="mt-8 py-10 flex flex-col items-center justify-center text-center px-4">
                 <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-3">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <h3 className="text-sm font-bold text-slate-800">Generate Your Personalized AI Synthesis</h3>
+                <h3 className="text-sm font-bold text-slate-800">Explore your wellness insights</h3>
                 <p className="text-xs text-slate-500 max-w-sm mt-1">
-                  Click the "Generate Gemini AI Insights" button to run an algorithmic scan on your stress, sleep, and fatigue parameters.
+                  Generate insights from your recorded check-ins. The result is informational, not a diagnosis.
                 </p>
                 <button
                   onClick={() => insightMutation.mutate()}
@@ -316,8 +317,8 @@ export const Wellness: React.FC = () => {
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-800">30-Day Physiological Biometrics</h2>
-              <p className="text-xs text-slate-400">Longitudinal evaluation of stress, mood, and sleep duration</p>
+              <h2 className="text-base font-bold text-slate-800">30-day wellness trends</h2>
+              <p className="text-xs text-slate-400">Your saved self-reported mood, stress, and sleep entries</p>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs font-semibold">
@@ -339,6 +340,14 @@ export const Wellness: React.FC = () => {
         <div className="h-80 mt-6">
           {trendsLoading ? (
             <LoadingSpinner />
+          ) : trendsError ? (
+            <div role="alert" className="h-full flex items-center justify-center px-4 text-center text-sm text-slate-600">
+              Wellness trends are unavailable right now. Please try again later.
+            </div>
+          ) : !trends?.length ? (
+            <div className="h-full flex items-center justify-center px-4 text-center text-sm text-slate-500">
+              Your saved check-in trends will appear here.
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
